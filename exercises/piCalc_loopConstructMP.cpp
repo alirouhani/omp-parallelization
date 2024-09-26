@@ -3,7 +3,7 @@
 
 static long num_steps = 2000000000;
 double step;
-#define NUM_THREADS 32
+#define NUM_THREADS 4
 int main (){
     double pi, x, sum, start_time, run_time;
     step = 1.0/(double) num_steps;
