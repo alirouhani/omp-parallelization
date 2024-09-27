@@ -1,96 +1,51 @@
-#include <omp.h>
 #include <iostream>
+#include <omp.h>
 #include <vector>
 
-#define NUM_THREADS 6
-#define N 12
-#define FS 38 
+#define NUM_THREADS 8
+#define N        32
+#define SEED       2531
+#define RAND_MULT  1366
+#define RAND_ADD   150889
+#define RAND_MOD   714025
+int randy = SEED;
 
-struct node {
-    int data;
-    int fibdata;
-    node* next;
-};
-
-int fib(int n);
-void processwork(node* p);
-std::vector<node*> init_list();
-void display(std::string text) {std::cout << text << std::endl;}
+/* function to fill an array with random numbers */
+void fill_rand(int length, std::vector<double*> a);
+/* function to sum the elements of an array */
+double Sum_array(int length, std::vector<double*> a);
 
 int main() {
-    int i = 0;
-    double start, end;
+    double sum, runtime;
+    std::vector<double*> A(N);
+    int flag = 0;
     omp_set_num_threads(NUM_THREADS);
 
-    printf("Process linked list\n");
-    printf("  Each linked list node will be processed by function 'processwork()'\n");
-    printf("  Each ll node will compute %d fibonacci numbers beginning with %d\n",N+1,FS); 
-
-    std::vector<node*> parr = init_list();
-    start = omp_get_wtime();
-    {
-#pragma omp parallel firstprivate(i) 
-        {
-#pragma omp single
-            {
-                while (i <= N) {
-                    node* p = parr[i];
-#pragma omp task firstprivate(p) 
-                    {
-                        processwork(p);
-                    }
-                    i += 1;
-                }
-            }
-        }
-    }
-
-    end = omp_get_wtime();
-    i = 0;
-    while (parr[i] != NULL) {
-        printf("%d : %d\n",parr[i]->data, parr[i]->fibdata);
-        free (parr[i]);
-        i += 1;
-    }  
-
-    printf("Compute Time: %f seconds\n", end - start);
-    return 0;
-}
-
-std::vector<node*> init_list() {
-    node *p = new node();
-    std::vector<node*> parr(N+1, new node());
-
-    p->data = FS;
-    p->fibdata = 0;
-    parr[0] = p;
-#pragma omp parallel for schedule(static,1)
+    // Allocate memory for each element
     for (int i = 0; i < N; ++i) {
-        p = new node();
-        p->data = FS + i + 1;
-        p->fibdata = i + 1;
-        parr[i]->next = p;
-        if (parr[i+1]->next != nullptr) p->next = parr[i+1]->next;
-        parr[i+1] = p;
+        A[i] = new double;  // Allocate a new double for each element
     }
-    parr[parr.size()-1]->next = NULL;
-    return parr;
+
+    runtime = omp_get_wtime();
+#pragma omp parallel
+    {
+    fill_rand(N, A);        // Producer: fill an array of data
+    sum = Sum_array(N, A);  // Consumer: sum the array
+    }
+    runtime = omp_get_wtime() - runtime;
+    std::cout << "In " << runtime << " seconds, The sum is " << sum << std::endl;
 }
 
-int fib(int n) {
-    int x, y;
-    if (n < 2) {
-        return (n);
-    } else {
-        x = fib(n - 1);
-        y = fib(n - 2);
-        return (x + y);
-    }
+void fill_rand(int length, std::vector<double*> a) {
+    for (int i = 0; i < length; ++i) {
+        randy = (RAND_MULT * randy + RAND_ADD) % RAND_MOD;
+        *(a[i]) = ((double) randy)/((double) RAND_MOD);
+    }   
 }
 
-void processwork(struct node* p) {
-    int n;
-    n = p->data;
-    p->fibdata = fib(n);
+double Sum_array(int length, std::vector<double*> a) {
+    double sum = 0.0;
+    for (int i = 0; i < length; ++i) sum += *(a[i]);  
+    return sum; 
 }
 

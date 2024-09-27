@@ -15,7 +15,6 @@ struct node {
 int fib(int n);
 void processwork(node* p);
 std::vector<node*> init_list();
-void display(std::string text) {std::cout << text << std::endl;}
 
 int main() {
     int i = 0;
